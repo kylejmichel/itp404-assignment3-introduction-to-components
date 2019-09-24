@@ -1,63 +1,104 @@
 import React from 'react';
 import Loading from './Loading';
 import RedditPostsCard from './RedditPostsCard'
+import RedditPostsList from './RedditPostsList'
 import './App.css';
 import { getPosts } from './RedditApi'
 
-// function App() {
-//   return (
-//     // <div className="App">
-//     //
-//     // </div>
-//
-//   );
-// }
-
 class App extends React.Component {
 
-  constructor(props) {
-    super(props);
+  constructor() {
+    super();
     this.state = {
       posts: [],
-      loading: true
+      loading: false,
+      postsArrived: false,
+      searchValue: '',
+      previousSearches: [],
+      readCount: 1,
+      error: false
     }
   }
   async componentDidMount() {
-    // fetch('https://api.github.com/orgs/emberjs/members').then((response) => {
-    //   return response.json()
-    // }).then((members) => {
-    //   console.log(members)
-    // });
 
-    let posts = await getPosts();
-    this.setState({ posts, loading: false });
   }
+  handleSearchInputChange = (event) => {
+    this.setState({
+      searchValue: event.target.value
+    });
+  }
+  handleError = () => {
+    this.setState({error: true})
+  }
+  handleSearch = async (event) => {
+    event.preventDefault();
+    this.setState({ loading: true });
+    let posts
+    try {
+      this.setState({error: false})
+       posts = await getPosts(this.state.searchValue) }
+    catch(error) {
+      this.setState({error: true})
+      alert(error)
+    }
 
-
+    this.setState({
+      previousSearches: this.state.previousSearches.concat([this.state.searchValue])
+    })
+    if (this.state.error) {
+      this.setState({ loading: false, postsArrived: false });
+    }
+    else {
+      console.log(posts)
+      this.setState({ posts, loading: false, postsArrived: true });
+    }
+  }
+  applyPreviousSearch = async (term) => {
+    this.setState({ loading: true });
+    let posts;
+    try {
+      this.setState({error: false})
+       posts = await getPosts(term) }
+    catch(error) {
+      this.setState({error: true})
+      alert(error)
+    }
+    if (this.state.error) {
+      this.setState({ loading: false, postsArrived: false });
+    }
+    else {
+      console.log(posts)
+      this.setState({ posts, loading: false, postsArrived: true });
+    }
+  }
+  passedFunction = () => {
+    this.setState({ readCount: this.state.readCount + 1 })
+    document.getElementById('read').innerHTML = this.state.readCount;
+  }
   render() {
     return (
-      // <div>
-      //   <p>Members: {this.state.members.length}</p>
-      //   <div>
-      //     {this.state.loading ? <Loading /> : this.state.members.map((member) => {
-      //       return <MemberImage member={member} key={member.id}/>
-      //     })}
-      //   </div>
-      // </div>
       <div>
-        <h1>r/AskReddit</h1>
+      <form onSubmit={this.handleSearch}>
+      <input type="text" value={this.state.searchValue} onChange={this.handleSearchInputChange} />
+      <button type="submit" >Posts</button>
+      </form>
+      <div className="history">
+      <h3>Search History</h3>
+      {this.state.previousSearches.map((term) => {
+        return (
+          <button type="button" onClick={this.applyPreviousSearch.bind(this, term)}>
+          {term}
+          </button>
+        );
+      })}
+      </div>
+      <div>
+      <span id="read">0</span> posts read
+      </div>
 
+      {this.state.loading && <Loading />}
+      {this.state.postsArrived ? <RedditPostsList posts={this.state.posts} passedFunction={this.passedFunction} /> : '' }
 
-
-
-        {this.state.loading ? <Loading /> :
-          <>
-          <p id="subs">{this.state.posts.data.children[0].data.subreddit_subscribers.toLocaleString()}</p>
-          {this.state.posts.data.children.map(({data}) => {
-              return <RedditPostsCard post={data} key={JSON.stringify(data)} />
-            })}
-          </>
-        }
       </div>
     );
   }

@@ -110,3 +110,8 @@ html {
     height: 5em;
   }
 }
+.history {
+  width: 100%;
+  background: white;
+  margin: 50px 0px;
+}
